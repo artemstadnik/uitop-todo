@@ -1,4 +1,5 @@
-import { TextField, MenuItem } from '@mui/material';
+import { TextField, MenuItem, InputAdornment } from '@mui/material';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import type { Category } from '../types';
 import type { CategoryFilter as Filter } from '../hooks/useTodos';
 
@@ -12,16 +13,24 @@ export function CategoryFilter({ categories, value, onChange }: Props) {
   return (
     <TextField
       select
-      label="Filter by category"
       size="small"
       value={value === 'all' ? 'all' : String(value)}
       onChange={(e) => {
         const v = e.target.value;
         onChange(v === 'all' ? 'all' : Number(v));
       }}
-      sx={{ minWidth: 200, mb: 2 }}
+      sx={{ minWidth: 190 }}
+      slotProps={{
+        input: {
+          startAdornment: (
+            <InputAdornment position="start">
+              <FilterListIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </InputAdornment>
+          ),
+        },
+      }}
     >
-      <MenuItem value="all">All</MenuItem>
+      <MenuItem value="all">All categories</MenuItem>
       {categories.map((c) => (
         <MenuItem key={c.id} value={String(c.id)}>
           {c.name}

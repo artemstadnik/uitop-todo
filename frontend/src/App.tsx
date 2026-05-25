@@ -1,4 +1,4 @@
-import { Container, Typography, Paper } from '@mui/material';
+import { Container, Typography, Paper, Box } from '@mui/material';
 import axios from 'axios';
 import { useTodos } from './hooks/useTodos';
 import { usePendingAction } from './hooks/usePendingAction';
@@ -30,11 +30,9 @@ function App() {
 
   const handleToggle = (todo: Todo) => {
     const nextCompleted = !todo.completed;
-
     setTodos((prev) =>
       prev.map((t) => (t.id === todo.id ? { ...t, completed: nextCompleted } : t))
     );
-
     schedule({
       message: nextCompleted ? 'Task completed' : 'Task marked active',
       onCommit: () => {
@@ -50,9 +48,7 @@ function App() {
 
   const handleDelete = (todo: Todo) => {
     const index = todos.findIndex((t) => t.id === todo.id);
-
     setTodos((prev) => prev.filter((t) => t.id !== todo.id));
-
     schedule({
       message: 'Task deleted',
       onCommit: () => {
@@ -70,16 +66,28 @@ function App() {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-        Todo Manager
-      </Typography>
+    <Container maxWidth="sm" sx={{ py: { xs: 4, sm: 8 } }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: 32, sm: 40 } }}>
+          Todo Manager
+        </Typography>
+        <Typography variant="body1" sx={{ color: 'text.secondary', mt: 0.5 }}>
+          Organize tasks by category — up to 5 per category.
+        </Typography>
+      </Box>
 
-      <TodoForm categories={categories} onCreate={handleCreate} />
+      <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 2.5, borderRadius: 4 }}>
+        <TodoForm categories={categories} onCreate={handleCreate} />
+      </Paper>
 
-      <CategoryFilter categories={categories} value={filter} onChange={setFilter} />
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+            Tasks
+          </Typography>
+          <CategoryFilter categories={categories} value={filter} onChange={setFilter} />
+        </Box>
 
-      <Paper variant="outlined" sx={{ p: 1 }}>
         {loading && <Loader />}
         {!loading && error && <ErrorBox message={error} onRetry={reload} />}
         {!loading && !error && (

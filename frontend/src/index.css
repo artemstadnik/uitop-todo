@@ -1,0 +1,23 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background-color: #f4f4f7;
+  background-image:
+    radial-gradient(at 18% 12%, rgba(99, 102, 241, 0.10) 0px, transparent 55%),
+    radial-gradient(at 85% 8%, rgba(20, 184, 166, 0.08) 0px, transparent 50%),
+    radial-gradient(at 75% 95%, rgba(99, 102, 241, 0.06) 0px, transparent 55%);
+  background-attachment: fixed;
+}
