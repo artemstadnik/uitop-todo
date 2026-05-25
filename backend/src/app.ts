@@ -10,6 +10,9 @@ export function createApp() {
   app.use(express.json());
 
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+  app.get('/', (_req, res) =>
+    res.json({ name: 'Todo Manager API', endpoints: ['/health', '/categories', '/todos'] })
+    );
   app.use('/todos', todosRouter);
   app.use('/categories', categoriesRouter);
 
