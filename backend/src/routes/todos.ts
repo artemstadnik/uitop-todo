@@ -44,9 +44,7 @@ router.get('/', (req, res) => {
     return res.json(rows.map(mapTodo));
   }
 
-  const rows = db
-    .prepare(`${SELECT_TODO} ORDER BY t.created_at DESC`)
-    .all() as TodoRow[];
+  const rows = db.prepare(`${SELECT_TODO} ORDER BY t.created_at DESC`).all() as TodoRow[];
   res.json(rows.map(mapTodo));
 });
 
@@ -78,6 +76,29 @@ router.post('/', (req, res) => {
     .run(text.trim(), categoryId);
   const row = db.prepare(`${SELECT_TODO} WHERE t.id = ?`).get(info.lastInsertRowid) as TodoRow;
   res.status(201).json(mapTodo(row));
+});
+
+router.patch('/bulk', (req, res) => {
+  const { ids, completed } = req.body ?? {};
+
+  if (!Array.isArray(ids) || ids.length === 0 || !ids.every((id) => Number.isInteger(id))) {
+    return res.status(400).json({ error: 'ids must be a non-empty array of integers' });
+  }
+  if (typeof completed !== 'boolean') {
+    return res.status(400).json({ error: 'completed (boolean) is required' });
+  }
+
+  const update = db.prepare('UPDATE todos SET completed = ? WHERE id = ?');
+  const runAll = db.transaction((list: number[]) => {
+    for (const id of list) update.run(completed ? 1 : 0, id);
+  });
+  runAll(ids);
+
+  const placeholders = ids.map(() => '?').join(',');
+  const rows = db
+    .prepare(`${SELECT_TODO} WHERE t.id IN (${placeholders})`)
+    .all(...ids) as TodoRow[];
+  res.json(rows.map(mapTodo));
 });
 
 router.patch('/:id', (req, res) => {

@@ -26,3 +26,8 @@ export async function updateTodoStatus(id: number, completed: boolean): Promise<
 export async function deleteTodo(id: number): Promise<void> {
   await api.delete(`/todos/${id}`);
 }
+
+export async function bulkUpdateStatus(ids: number[], completed: boolean): Promise<Todo[]> {
+  const { data } = await api.patch<Todo[]>('/todos/bulk', { ids, completed });
+  return data;
+}

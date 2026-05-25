@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Container, Typography, Paper, Box } from '@mui/material';
 import axios from 'axios';
 import { useTodos } from './hooks/useTodos';
@@ -5,15 +6,58 @@ import { usePendingAction } from './hooks/usePendingAction';
 import { TodoList } from './components/TodoList';
 import { TodoForm } from './components/TodoForm';
 import { CategoryFilter } from './components/CategoryFilter';
+import { BulkActionsBar } from './components/BulkActionsBar';
 import { UndoSnackbar } from './components/UndoSnackbar';
 import { Loader } from './components/states/Loader';
 import { ErrorBox } from './components/states/ErrorBox';
-import { createTodo, updateTodoStatus, deleteTodo } from './api/todos';
+import { createTodo, updateTodoStatus, deleteTodo, bulkUpdateStatus } from './api/todos';
 import type { CreateTodoInput, Todo } from './types';
 
 function App() {
   const { todos, setTodos, categories, filter, setFilter, loading, error, reload } = useTodos();
   const { pending, schedule, undo, dismiss, undoTimeoutMs } = usePendingAction();
+
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  const handleSelect = (id: number, selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (selected) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = (checked: boolean) => {
+    setSelectedIds(checked ? new Set(todos.map((t) => t.id)) : new Set());
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkDone = () => {
+    const idsToComplete = todos
+      .filter((t) => selectedIds.has(t.id) && !t.completed)
+      .map((t) => t.id);
+
+    if (idsToComplete.length === 0) {
+      clearSelection();
+      return;
+    }
+    const changed = new Set(idsToComplete);
+
+    setTodos((prev) => prev.map((t) => (changed.has(t.id) ? { ...t, completed: true } : t)));
+    clearSelection();
+
+    schedule({
+      message: `${idsToComplete.length} task${idsToComplete.length > 1 ? 's' : ''} completed`,
+      onCommit: () => {
+        bulkUpdateStatus(idsToComplete, true).catch(() => reload());
+      },
+      onUndo: () => {
+        setTodos((prev) => prev.map((t) => (changed.has(t.id) ? { ...t, completed: false } : t)));
+      },
+    });
+  };
 
   const handleCreate = async (input: CreateTodoInput) => {
     try {
@@ -49,6 +93,11 @@ function App() {
   const handleDelete = (todo: Todo) => {
     const index = todos.findIndex((t) => t.id === todo.id);
     setTodos((prev) => prev.filter((t) => t.id !== todo.id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(todo.id);
+      return next;
+    });
     schedule({
       message: 'Task deleted',
       onCommit: () => {
@@ -64,6 +113,8 @@ function App() {
       },
     });
   };
+
+  const allSelected = todos.length > 0 && selectedIds.size === todos.length;
 
   return (
     <Container maxWidth="sm" sx={{ py: { xs: 4, sm: 8 } }}>
@@ -81,17 +132,36 @@ function App() {
       </Paper>
 
       <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Box
+          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
+        >
           <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
             Tasks
           </Typography>
           <CategoryFilter categories={categories} value={filter} onChange={setFilter} />
         </Box>
 
+        {selectedIds.size > 0 && (
+          <BulkActionsBar
+            selectedCount={selectedIds.size}
+            totalCount={todos.length}
+            allSelected={allSelected}
+            onToggleSelectAll={handleToggleSelectAll}
+            onMarkDone={handleBulkDone}
+            onClear={clearSelection}
+          />
+        )}
+
         {loading && <Loader />}
         {!loading && error && <ErrorBox message={error} onRetry={reload} />}
         {!loading && !error && (
-          <TodoList todos={todos} onToggle={handleToggle} onDelete={handleDelete} />
+          <TodoList
+            todos={todos}
+            selectedIds={selectedIds}
+            onSelect={handleSelect}
+            onToggle={handleToggle}
+            onDelete={handleDelete}
+          />
         )}
       </Paper>
 
